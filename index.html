@@ -1,0 +1,548 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Hệ Thống Luyện Thi Vào 10 - Môn Toán (Public)</title>
+    <!-- Tailwind CSS -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <!-- Chart.js -->
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <!-- KaTeX cho công thức Toán -->
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/katex@0.16.8/dist/katex.min.css">
+    <script src="https://cdn.jsdelivr.net/npm/katex@0.16.8/dist/katex.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/katex@0.16.8/dist/contrib/auto-render.min.js"></script>
+    
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap');
+        body { 
+            font-family: 'Inter', sans-serif; 
+            background-color: #f8fafc; 
+            color: #334155; 
+        }
+        .chart-container { 
+            position: relative; 
+            width: 100%; 
+            max-width: 600px; 
+            margin: auto; 
+            height: 350px; 
+            max-height: 400px; 
+            display: flex; 
+            justify-content: center; 
+            align-items: center; 
+        }
+        @media (max-width: 768px) { 
+            .chart-container { height: 250px; } 
+            .mobile-padding-bottom { padding-bottom: 5rem; }
+        }
+        .nav-item.active { 
+            background-color: #eff6ff; 
+            color: #2563eb; 
+            border-right: 4px solid #2563eb; 
+            font-weight: 600; 
+        }
+        .section-content { display: none; }
+        .section-content.active { 
+            display: block; 
+            animation: fadeIn 0.4s ease-out; 
+        }
+        @keyframes fadeIn { 
+            from { opacity: 0; transform: translateY(10px); } 
+            to { opacity: 1; transform: translateY(0); } 
+        }
+        .math-inline { font-size: 1.1em; }
+        .tf-btn.active-true { 
+            background-color: #10b981; 
+            color: white; 
+            border-color: #10b981; 
+        }
+        .tf-btn.active-false { 
+            background-color: #ef4444; 
+            color: white; 
+            border-color: #ef4444; 
+        }
+        .correct-bg { background-color: #f0fdf4 !important; border-color: #bbf7d0 !important; }
+        .wrong-bg { background-color: #fef2f2 !important; border-color: #fecaca !important; }
+        
+        /* Custom scrollbar */
+        ::-webkit-scrollbar { width: 6px; }
+        ::-webkit-scrollbar-track { background: #f1f1f1; }
+        ::-webkit-scrollbar-thumb { background: #cbd5e1; border-radius: 10px; }
+        ::-webkit-scrollbar-thumb:hover { background: #94a3b8; }
+    </style>
+</head>
+<body class="flex flex-col md:flex-row h-screen overflow-hidden selection:bg-blue-200 selection:text-blue-900">
+
+    <!-- Sidebar: Truy cập công khai, không cần đăng nhập -->
+    <aside class="w-full md:w-72 bg-white border-b md:border-r border-slate-200 flex flex-col shadow-sm z-20 md:h-full shrink-0 transition-all duration-300">
+        <div class="p-4 md:p-6 border-b border-slate-200 flex justify-between items-center md:block bg-white">
+            <div>
+                <h1 class="text-xl font-bold text-slate-800 leading-tight flex items-center gap-2">
+                    <span>📚</span> Ôn Thi Vào 10
+                </h1>
+                <p class="text-xs text-slate-500 mt-1 font-medium">Trải nghiệm công khai - Miễn phí</p>
+            </div>
+            <button id="mobile-menu-btn" class="md:hidden text-2xl text-slate-600 hover:text-blue-600 transition-colors p-2 rounded-lg hover:bg-slate-50">
+                <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" class="w-6 h-6">
+                    <path stroke-linecap="round" stroke-linejoin="round" d="M3.75 6.75h16.5M3.75 12h16.5m-16.5 5.25h16.5" />
+                </svg>
+            </button>
+        </div>
+        
+        <nav id="sidebar-nav" class="hidden md:flex flex-1 flex-col overflow-y-auto py-2 bg-white absolute md:relative w-full md:w-auto top-[73px] md:top-0 h-[calc(100vh-73px)] md:h-auto border-b md:border-b-0 shadow-lg md:shadow-none z-10">
+            <ul class="space-y-1">
+                <li><button onclick="navTo('overview')" id="nav-overview" class="nav-item active w-full text-left px-6 py-3 flex items-center gap-3 transition-colors hover:bg-slate-50"><span class="text-lg">📊</span> Tổng Quan</button></li>
+                <li><button onclick="navTo('part1')" id="nav-part1" class="nav-item w-full text-left px-6 py-3 flex items-center gap-3 transition-colors hover:bg-slate-50"><span class="text-lg">❶</span> Phần I: Trắc Nghiệm</button></li>
+                <li><button onclick="navTo('part2')" id="nav-part2" class="nav-item w-full text-left px-6 py-3 flex items-center gap-3 transition-colors hover:bg-slate-50"><span class="text-lg">❷</span> Phần II: Đúng/Sai</button></li>
+                <li><button onclick="navTo('part3')" id="nav-part3" class="nav-item w-full text-left px-6 py-3 flex items-center gap-3 transition-colors hover:bg-slate-50"><span class="text-lg">❸</span> Phần III: Trả Lời Ngắn</button></li>
+            </ul>
+            
+            <div class="p-4 mt-auto md:hidden">
+                <button onclick="gradeExam()" class="btn-submit-all w-full bg-blue-600 hover:bg-blue-700 text-white font-semibold py-3 px-4 rounded-xl transition-all shadow-md active:scale-[0.98]">
+                    Nộp Bài & Chấm Điểm
+                </button>
+            </div>
+        </nav>
+
+        <div class="p-4 md:p-6 border-t border-slate-200 bg-slate-50 hidden md:block mt-auto" id="sidebar-footer">
+            <button onclick="gradeExam()" class="btn-submit-all w-full bg-blue-600 hover:bg-blue-700 text-white font-semibold py-3 px-4 rounded-xl transition-all shadow-md hover:shadow-lg active:scale-[0.98]">
+                Nộp Bài & Chấm Điểm
+            </button>
+            <button id="nav-results" onclick="navTo('results')" class="hidden w-full bg-emerald-500 hover:bg-emerald-600 text-white font-semibold py-3 px-4 rounded-xl transition-all shadow-md hover:shadow-lg active:scale-[0.98]">
+                Xem Báo Cáo Chi Tiết
+            </button>
+            <div class="mt-4 text-center text-[10px] text-slate-400 uppercase tracking-widest font-semibold">Không yêu cầu đăng nhập</div>
+        </div>
+    </aside>
+
+    <main class="flex-1 h-full overflow-y-auto bg-slate-50 p-4 md:p-8 relative" id="main-content">
+        <div class="max-w-4xl mx-auto mobile-padding-bottom pb-8">
+
+            <section id="section-overview" class="section-content active">
+                <div class="bg-white rounded-2xl shadow-sm border border-slate-200 p-6 md:p-8">
+                    <h2 class="text-2xl font-bold text-slate-800 mb-2">Mô Phỏng Đề Thi 2026-2027</h2>
+                    <p class="text-slate-500 mb-8 font-medium">Nhấn vào các phần ở thanh menu bên phải hoặc trái để bắt đầu làm bài. Hệ thống tự động chấm điểm ngay sau khi bạn nhấn "Nộp Bài".</p>
+                    
+                    <div class="grid grid-cols-1 md:grid-cols-2 gap-8 items-center bg-blue-50/50 p-6 rounded-2xl border border-blue-100">
+                        <div class="space-y-4">
+                            <div class="bg-white p-4 rounded-xl shadow-sm border-l-4 border-blue-500 flex justify-between items-center transform transition hover:-translate-y-1">
+                                <div class="flex flex-col">
+                                    <span class="font-bold text-slate-700">Phần I: Trắc nghiệm</span>
+                                    <span class="text-xs text-slate-500">12 câu hỏi</span>
+                                </div>
+                                <span class="font-bold bg-blue-100 text-blue-700 px-3 py-1 rounded-lg">3.0đ</span>
+                            </div>
+                            <div class="bg-white p-4 rounded-xl shadow-sm border-l-4 border-indigo-500 flex justify-between items-center transform transition hover:-translate-y-1">
+                                <div class="flex flex-col">
+                                    <span class="font-bold text-slate-700">Phần II: Đúng/Sai</span>
+                                    <span class="text-xs text-slate-500">4 câu hỏi (16 ý)</span>
+                                </div>
+                                <span class="font-bold bg-indigo-100 text-indigo-700 px-3 py-1 rounded-lg">4.0đ</span>
+                            </div>
+                            <div class="bg-white p-4 rounded-xl shadow-sm border-l-4 border-purple-500 flex justify-between items-center transform transition hover:-translate-y-1">
+                                <div class="flex flex-col">
+                                    <span class="font-bold text-slate-700">Phần III: Trả lời ngắn</span>
+                                    <span class="text-xs text-slate-500">6 câu hỏi</span>
+                                </div>
+                                <span class="font-bold bg-purple-100 text-purple-700 px-3 py-1 rounded-lg">3.0đ</span>
+                            </div>
+                        </div>
+                        <div class="chart-container">
+                            <canvas id="overviewChart"></canvas>
+                        </div>
+                    </div>
+                </div>
+            </section>
+
+            <section id="section-part1" class="section-content">
+                <div class="bg-white rounded-2xl shadow-sm border border-slate-200 p-6 md:p-8">
+                    <div class="border-b border-slate-100 pb-4 mb-6">
+                        <h2 class="text-2xl font-bold text-slate-800">Phần I. Trắc Nghiệm Một Phương Án</h2>
+                        <p class="text-slate-500 text-sm mt-1">Chọn 1 đáp án đúng duy nhất cho mỗi câu hỏi.</p>
+                    </div>
+                    <div id="part1-container" class="space-y-6"></div>
+                </div>
+            </section>
+
+            <section id="section-part2" class="section-content">
+                <div class="bg-white rounded-2xl shadow-sm border border-slate-200 p-6 md:p-8">
+                    <div class="border-b border-slate-100 pb-4 mb-6">
+                        <h2 class="text-2xl font-bold text-slate-800">Phần II. Trắc Nghiệm Đúng/Sai</h2>
+                        <p class="text-slate-500 text-sm mt-1">Trong mỗi ý a), b), c), d) ở mỗi câu, thí sinh chọn Đúng hoặc Sai.</p>
+                    </div>
+                    <div id="part2-container" class="space-y-8"></div>
+                </div>
+            </section>
+
+            <section id="section-part3" class="section-content">
+                <div class="bg-white rounded-2xl shadow-sm border border-slate-200 p-6 md:p-8">
+                    <div class="border-b border-slate-100 pb-4 mb-6">
+                        <h2 class="text-2xl font-bold text-slate-800">Phần III. Trả Lời Ngắn</h2>
+                        <p class="text-slate-500 text-sm mt-1">Tính toán và điền đáp án dạng số vào ô trống.</p>
+                    </div>
+                    <div id="part3-container" class="space-y-6"></div>
+                </div>
+            </section>
+
+            <section id="section-results" class="section-content">
+                <div class="bg-white rounded-2xl shadow-sm border border-slate-200 p-6 md:p-10 text-center">
+                    <div class="inline-flex items-center justify-center w-16 h-16 rounded-full bg-emerald-100 text-emerald-500 mb-4">
+                        <svg xmlns="http://www.w3.org/2000/svg" class="h-8 w-8" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+                            <path stroke-linecap="round" stroke-linejoin="round" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
+                        </svg>
+                    </div>
+                    <h2 class="text-3xl font-bold text-slate-800 mb-6">Kết Quả Bài Làm</h2>
+                    <div class="inline-block bg-gradient-to-b from-emerald-50 to-white px-12 py-8 rounded-3xl border border-emerald-100 mb-8 shadow-sm">
+                        <div class="text-7xl font-black text-emerald-600 tracking-tight" id="final-score">0.0</div>
+                        <div class="text-slate-500 font-medium mt-3 uppercase tracking-wider text-sm">Tổng điểm / 10.0</div>
+                    </div>
+                    <div class="chart-container bg-slate-50 p-4 rounded-2xl border border-slate-100">
+                        <canvas id="resultsChart"></canvas>
+                    </div>
+                    <div id="performance-feedback" class="mt-8 p-5 rounded-xl bg-blue-50 text-blue-800 font-medium text-lg border border-blue-100"></div>
+                    <button onclick="location.reload()" class="mt-8 inline-flex items-center gap-2 text-slate-500 hover:text-blue-600 font-medium transition-colors">
+                        <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
+                        </svg>
+                        Làm lại bài thi
+                    </button>
+                </div>
+            </section>
+
+        </div>
+    </main>
+
+    <!-- Nút nộp bài nổi trên mobile -->
+    <div class="md:hidden fixed bottom-0 left-0 right-0 p-4 bg-white/80 backdrop-blur-md border-t border-slate-200 z-30 transform transition-transform" id="mobile-submit-bar">
+        <button onclick="gradeExam()" class="btn-submit-all w-full bg-blue-600 hover:bg-blue-700 text-white font-semibold py-3.5 px-4 rounded-xl shadow-lg active:scale-[0.98] transition-all">
+            Nộp Bài & Chấm Điểm
+        </button>
+    </div>
+
+    <script>
+        const examData = {
+            part1: [
+                { id: 1, q: "Căn bậc hai số học của 25 là:", opts: ["-5", "5 và -5", "5", "625"], ans: 2 },
+                { id: 2, q: "Hệ phương trình $\\begin{cases} x + 2y = 8 \\\\ x - y = 2 \\end{cases}$ có nghiệm $(x; y)$ là:", opts: ["$(4; 2)$", "$(2; 4)$", "$(6; 1)$", "$(0; 4)$"], ans: 0 },
+                { id: 3, q: "Cho tam giác $MNP$ vuông tại $M$ có $MN = 6$ cm, $MP = 8$ cm. Khẳng định nào sau đây đúng?", opts: ["$\\sin P = 0,8$", "$\\cos N = 0,8$", "$\\tan N = \\frac{4}{3}$", "$\\cot P = 0,6$"], ans: 2 },
+                { id: 4, q: "Xác suất của biến cố \"Mặt xuất hiện có số chấm là số nguyên tố\" khi gieo xúc xắc 6 mặt là:", opts: ["1/3", "1/2", "2/3", "1/6"], ans: 1 },
+                { id: 5, q: "Điều kiện xác định của $\\sqrt{3x - 6}$ là:", opts: ["$x \\ge -2$", "$x \\le 2$", "$x > 2$", "$x \\ge 2$"], ans: 3 },
+                { id: 6, q: "Cho góc $\\alpha = 35^\\circ, \\beta = 55^\\circ$. Khẳng định đúng là:", opts: ["$\\sin \\alpha = \\sin \\beta$", "$\\sin \\alpha = \\cos \\beta$", "$\\tan \\alpha = \\tan \\beta$", "$\\cos \\alpha = \\cos \\beta$"], ans: 1 },
+                { id: 7, q: "Góc nội tiếp chắn nửa đường tròn có số đo:", opts: ["$60^\\circ$", "$90^\\circ$", "$120^\\circ$", "$180^\\circ$"], ans: 1 },
+                { id: 8, q: "Số đo cung nhỏ $AB$ khi góc ở tâm $\\widehat{AOB} = 120^\\circ$ là:", opts: ["$60^\\circ$", "$240^\\circ$", "$120^\\circ$", "$90^\\circ$"], ans: 2 },
+                { id: 9, q: "Tính $\\sqrt{25 \\cdot 4} - \\sqrt{81}$:", opts: ["1", "19", "9", "-1"], ans: 0 },
+                { id: 10, q: "Nghiệm của $x^2 - 5x + 6 = 0$ là:", opts: ["-2; -3", "-1; 6", "2; 3", "1; -6"], ans: 2 },
+                { id: 11, q: "Cạnh huyền tam giác vuông có hai cạnh góc vuông 5cm và 12cm là:", opts: ["17cm", "13cm", "169cm", "7cm"], ans: 1 },
+                { id: 12, q: "Độ dài $EC$ khi $DE \\parallel BC, AD=2, DB=3, AE=4$ là:", opts: ["6cm", "5cm", "8cm", "3cm"], ans: 0 }
+            ],
+            part2: [
+                {
+                    id: 1, 
+                    context: "Trong một đợt đi mua sắm dụng cụ học tập, mẹ bạn An mua 2 chiếc bút bi và 3 quyển vở thì trả hết 34 nghìn đồng. Ở một cửa hàng khác với giá không đổi, lần thứ hai mẹ mua 4 chiếc bút bi và 1 quyển vở cùng loại thì hết 28 nghìn đồng. Gọi $x$ (nghìn đồng) là giá tiền của một chiếc bút bi và $y$ (nghìn đồng) là giá tiền của một quyển vở.",
+                    stmts: [
+                        { text: "a) Phương trình đầu: $2x + 3y = 34$.", ans: true },
+                        { text: "b) Hệ phương trình: $\\begin{cases} 2x + 3y = 34 \\\\ x + 4y = 28 \\end{cases}$", ans: false },
+                        { text: "c) Giá mỗi chiếc bút bi là 8 nghìn đồng.", ans: false },
+                        { text: "d) Mua 5 bút và 5 vở hết 65 nghìn đồng.", ans: true }
+                    ],
+                    explanation: "Giá bút 5k, vở 8k. Hệ đúng: 2x+3y=34 và 4x+y=28."
+                },
+                {
+                    id: 2, context: "Một lớp học có 40 học sinh được đánh số thứ tự từ 1 đến 40. Các bạn nữ mang số thứ tự từ 1 đến 15, các bạn nam mang số thứ tự từ 16 đến 40. Giáo viên chọn ngẫu nhiên một học sinh lên bảng.",
+                    stmts: [
+                        { text: "a) Có 15 kết quả thuận lợi cho biến cố HS nữ.", ans: true },
+                        { text: "b) Có 20 kết quả thuận lợi cho biến cố HS nam.", ans: false },
+                        { text: "c) Xác suất số thứ tự tròn chục là 0,1.", ans: true },
+                        { text: "d) Xác suất nữ có số chia hết cho 3 là 1/8.", ans: true }
+                    ],
+                    explanation: "Nam có 25 kết quả. Tròn chục có 4 số (10,20,30,40). Nữ chia hết cho 3 có 5 số."
+                },
+                {
+                    id: 3, context: "Cho tam giác $MNP$ vuông tại $M$, có độ dài cạnh $MN = 3\\text{ cm}$ và số đo góc $\\widehat{N} = 60^\\circ$. Vẽ đường tròn đường kính $MN$, gọi $K$ là giao điểm thứ hai của đường tròn này với cạnh $NP$ (với $K$ khác $M$).",
+                    stmts: [
+                        { text: "a) Góc P bằng $30^\\circ$.", ans: true },
+                        { text: "b) $MK$ vuông góc với $NP$.", ans: true },
+                        { text: "c) Cung nhỏ $MK$ là $60^\\circ$.", ans: false },
+                        { text: "d) Độ dài cung $MK$ là $\\pi$ cm.", ans: true }
+                    ],
+                    explanation: "Cung MK = 120 độ. Độ dài cung: $\\frac{\\pi \\cdot 1,5 \\cdot 120}{180} = \\pi$."
+                },
+                {
+                    id: 4, context: "Cho biểu thức đại số: $P = \\left( \\frac{1}{\\sqrt{x}-2} + \\frac{1}{\\sqrt{x}+2} \\right) : \\frac{\\sqrt{x}}{x-4}$. (Giả sử các giá trị của $x$ được xét đều thỏa mãn điều kiện xác định).",
+                    stmts: [
+                        { text: "a) ĐKXĐ: $x > 0$ và $x \\ne 4$.", ans: true },
+                        { text: "b) Rút gọn được $P = 2$.", ans: true },
+                        { text: "c) Khi $x = 9$ thì $P = 3$.", ans: false },
+                        { text: "d) Có vô số $x$ nguyên để $P$ nguyên.", ans: true }
+                    ],
+                    explanation: "P luôn bằng 2 với mọi x thỏa ĐKXĐ."
+                }
+            ],
+            part3: [
+                { id: 1, q: "Trong mặt phẳng tọa độ $Oxy$, cho đường thẳng $(d): y = ax + b$. Biết rằng đường thẳng $(d)$ song song với đường thẳng có phương trình $y = -3x + 1$ và đi qua điểm $A(2; -4)$. Hãy tìm giá trị của hệ số $b$.", ans: "2" },
+                { id: 2, q: "Một người đứng quan sát một cái cây từ khoảng cách 15 mét. Tại vị trí đó, người này nhìn thấy ngọn cây dưới một góc $42^\\circ$ so với phương ngang của tia nhìn. Biết khoảng cách từ mắt người quan sát đến mặt đất là 1,6 mét. Hỏi chiều cao của cái cây đó là bao nhiêu mét? (Làm tròn kết quả đến chữ số thập phân thứ nhất).", ans: "15,1" },
+                { id: 3, q: "Bác Ba gửi tiết kiệm 200 triệu đồng vào ngân hàng theo thể thức lãi kép, kỳ hạn 1 năm với lãi suất 5%/năm. Hỏi sau đúng 2 năm, tổng số tiền lãi mà bác Ba nhận được từ ngân hàng là bao nhiêu triệu đồng?", ans: "20,5" },
+                { id: 4, q: "Tính diện tích của một hình vành khuyên (phần mặt phẳng nằm giữa hai đường tròn đồng tâm) có bán kính đường tròn nhỏ là $r = 3\\text{ cm}$ và bán kính đường tròn lớn là $R = 8\\text{ cm}$. (Lấy $\\pi \\approx 3,14$ và làm tròn kết quả đến chữ số hàng đơn vị).", ans: "173" },
+                { id: 5, q: "Bạn An có 5 giờ để gấp hạc giấy và sao giấy. Biết rằng mỗi con hạc cần 4 phút để gấp và mỗi ngôi sao cần 3 phút để gấp. Nếu An đã gấp được 40 ngôi sao, hỏi An có thể gấp được tối đa bao nhiêu con hạc giấy trong thời gian còn lại?", ans: "45" },
+                { id: 6, q: "Gọi $x_1$ và $x_2$ là hai nghiệm phân biệt của phương trình bậc hai $x^2 - 12x + 35 = 0$. Hãy tìm giá trị của nghiệm có giá trị nhỏ hơn.", ans: "5" }
+            ]
+        };
+
+        const state = { answers: { p1: {}, p2: {}, p3: {} }, submitted: false };
+
+        function renderPart1() {
+            const cont = document.getElementById('part1-container');
+            cont.innerHTML = examData.part1.map((q, i) => `
+                <div class="bg-white p-5 md:p-6 rounded-xl border border-slate-200 shadow-sm transition hover:border-blue-300 hover:shadow-md" id="p1_card_${q.id}">
+                    <h3 class="font-semibold mb-4 flex gap-3 text-slate-800">
+                        <span class="bg-blue-100 text-blue-700 px-3 py-1 rounded-md h-fit text-sm whitespace-nowrap">Câu ${i+1}</span>
+                        <span class="math-inline leading-relaxed">${q.q}</span>
+                    </h3>
+                    <div class="grid grid-cols-1 md:grid-cols-2 gap-3 pl-0 md:pl-14">
+                        ${q.opts.map((o, oi) => `
+                            <label class="flex items-center p-3 border border-slate-200 rounded-xl cursor-pointer hover:bg-slate-50 transition" id="p1_label_${q.id}_${oi}">
+                                <input type="radio" name="p1_${q.id}" value="${oi}" onchange="saveAnswer('p1', ${q.id}, ${oi})" class="mr-3 w-4 h-4 text-blue-600 focus:ring-blue-500 border-slate-300">
+                                <span class="math-inline flex-1">${o}</span>
+                                <span id="p1_icon_${q.id}_${oi}" class="ml-2 hidden text-lg"></span>
+                            </label>
+                        `).join('')}
+                    </div>
+                </div>
+            `).join('');
+        }
+
+        function renderPart2() {
+            const cont = document.getElementById('part2-container');
+            cont.innerHTML = examData.part2.map((q, i) => `
+                <div class="bg-white p-5 md:p-6 rounded-xl border border-slate-200 shadow-sm" id="p2_card_${q.id}">
+                    <div class="mb-5">
+                        <span class="bg-indigo-100 text-indigo-700 px-3 py-1 rounded-md h-fit font-bold text-sm mb-3 inline-block">Câu ${i+1}</span>
+                        <p class="font-medium text-slate-700 leading-relaxed bg-indigo-50/50 p-4 rounded-xl border border-indigo-100">${q.context}</p>
+                    </div>
+                    <div class="space-y-3 bg-slate-50 p-2 md:p-4 rounded-xl border border-slate-100">
+                        ${q.stmts.map((s, si) => `
+                            <div class="flex flex-col lg:flex-row lg:items-center justify-between p-3 border-b border-slate-200 last:border-0 gap-3">
+                                <span class="flex-1 pr-4 math-inline text-slate-800">${s.text}</span>
+                                <div class="flex items-center gap-2 shrink-0 self-end lg:self-auto">
+                                    <button onclick="setTf(${q.id}, ${si}, true)" id="btn_${q.id}_${si}_t" class="tf-btn px-5 py-2 border border-slate-300 rounded-lg bg-white text-sm font-medium shadow-sm transition-all hover:border-emerald-400">Đúng</button>
+                                    <button onclick="setTf(${q.id}, ${si}, false)" id="btn_${q.id}_${si}_f" class="tf-btn px-5 py-2 border border-slate-300 rounded-lg bg-white text-sm font-medium shadow-sm transition-all hover:border-rose-400">Sai</button>
+                                    <span id="p2_res_${q.id}_${si}" class="ml-2 hidden text-xl w-6 text-center"></span>
+                                </div>
+                            </div>
+                        `).join('')}
+                    </div>
+                </div>
+            `).join('');
+        }
+
+        function renderPart3() {
+            const cont = document.getElementById('part3-container');
+            cont.innerHTML = examData.part3.map((q, i) => `
+                <div class="bg-white p-5 md:p-6 rounded-xl border border-slate-200 shadow-sm flex flex-col md:flex-row justify-between items-start md:items-center gap-5 hover:border-purple-300 transition hover:shadow-md">
+                    <div class="flex-1 flex gap-3 w-full">
+                        <span class="bg-purple-100 text-purple-700 px-3 py-1 rounded-md text-sm font-bold h-fit whitespace-nowrap">Câu ${i+1}</span>
+                        <p class="math-inline text-slate-800 leading-relaxed">${q.q}</p>
+                    </div>
+                    <div class="w-full md:w-56 text-right shrink-0">
+                        <input type="text" oninput="saveAnswer('p3', ${q.id}, this.value)" class="w-full border-2 border-slate-200 rounded-xl px-4 py-3 text-center font-bold text-slate-700 focus:border-purple-500 outline-none transition bg-slate-50 focus:bg-white" placeholder="Nhập số...">
+                        <p id="p3_res_${q.id}" class="text-sm mt-2 hidden text-left md:text-right"></p>
+                    </div>
+                </div>
+            `).join('');
+        }
+
+        function saveAnswer(p, q, v) { if(!state.submitted) state.answers[p][q] = v; }
+        function setTf(q, si, v) {
+            if(state.submitted) return;
+            if(!state.answers.p2[q]) state.answers.p2[q] = {};
+            state.answers.p2[q][si] = v;
+            document.getElementById(`btn_${q}_${si}_t`).className = v ? 'tf-btn px-5 py-2 border rounded-lg active-true text-sm font-semibold shadow-inner' : 'tf-btn px-5 py-2 border border-slate-300 rounded-lg bg-white text-sm font-medium shadow-sm text-slate-600';
+            document.getElementById(`btn_${q}_${si}_f`).className = !v ? 'tf-btn px-5 py-2 border rounded-lg active-false text-sm font-semibold shadow-inner' : 'tf-btn px-5 py-2 border border-slate-300 rounded-lg bg-white text-sm font-medium shadow-sm text-slate-600';
+        }
+
+        function navTo(id) {
+            document.querySelectorAll('.section-content').forEach(s => s.classList.remove('active'));
+            document.getElementById('section-' + id).classList.add('active');
+            document.querySelectorAll('.nav-item').forEach(n => n.classList.remove('active'));
+            
+            const activeNav = document.getElementById('nav-' + id);
+            if(activeNav) activeNav.classList.add('active');
+            
+            if (window.innerWidth < 768) {
+                document.getElementById('sidebar-nav').classList.add('hidden');
+            }
+            
+            // Cuộn lên đầu
+            document.getElementById('main-content').scrollTop = 0;
+        }
+
+        function gradeExam() {
+            if(state.submitted) return;
+            state.submitted = true;
+            let s = { p1: 0, p2: 0, p3: 0 };
+            
+            // Grade Part 1
+            examData.part1.forEach(q => {
+                const u = state.answers.p1[q.id];
+                if(u == q.ans) s.p1 += 0.25;
+                q.opts.forEach((_, idx) => {
+                    const icon = document.getElementById(`p1_icon_${q.id}_${idx}`);
+                    const label = document.getElementById(`p1_label_${q.id}_${idx}`);
+                    if(idx == q.ans) {
+                        icon.innerHTML = '✅';
+                        label.classList.add('correct-bg');
+                    } else if(u == idx) {
+                        icon.innerHTML = '❌';
+                        label.classList.add('wrong-bg');
+                    }
+                    icon.classList.remove('hidden');
+                    // Disable inputs
+                    const input = label.querySelector('input');
+                    if(input) input.disabled = true;
+                    label.classList.remove('cursor-pointer', 'hover:bg-slate-50');
+                });
+            });
+
+            // Grade Part 2
+            examData.part2.forEach(q => {
+                let countCorrect = 0;
+                q.stmts.forEach((stmt, si) => {
+                    const u = state.answers.p2[q.id]?.[si];
+                    const isCorrect = u === stmt.ans;
+                    if(isCorrect) countCorrect++;
+                    const res = document.getElementById(`p2_res_${q.id}_${si}`);
+                    res.innerHTML = stmt.ans ? '✅' : '❌';
+                    res.classList.remove('hidden');
+                    
+                    // Disable buttons
+                    const btnT = document.getElementById(`btn_${q.id}_${si}_t`);
+                    const btnF = document.getElementById(`btn_${q.id}_${si}_f`);
+                    btnT.disabled = true; btnF.disabled = true;
+                    btnT.classList.add('opacity-80', 'cursor-not-allowed');
+                    btnF.classList.add('opacity-80', 'cursor-not-allowed');
+                });
+                if(countCorrect == 1) s.p2 += 0.1;
+                else if(countCorrect == 2) s.p2 += 0.25;
+                else if(countCorrect == 3) s.p2 += 0.5;
+                else if(countCorrect == 4) s.p2 += 1.0;
+            });
+
+            // Grade Part 3
+            examData.part3.forEach(q => {
+                const inputEl = document.querySelector(`#p3_res_${q.id}`).previousElementSibling;
+                inputEl.disabled = true;
+                inputEl.classList.add('opacity-80', 'cursor-not-allowed');
+                
+                const u = (state.answers.p3[q.id] || "").toString().trim().replace(',', '.');
+                const a = q.ans.replace(',', '.');
+                const res = document.getElementById(`p3_res_${q.id}`);
+                const isCorrect = (u === a);
+                
+                res.innerHTML = isCorrect ? `✅ Chính xác!` : `❌ Đáp án đúng: <strong>${q.ans}</strong>`;
+                res.className = 'text-sm mt-3 ' + (isCorrect ? 'text-emerald-600' : 'text-rose-600');
+                res.classList.remove('hidden');
+                
+                if(isCorrect) {
+                    s.p3 += 0.5;
+                    inputEl.classList.add('border-emerald-400', 'bg-emerald-50', 'text-emerald-700');
+                } else {
+                    inputEl.classList.add('border-rose-400', 'bg-rose-50', 'text-rose-700');
+                }
+            });
+
+            const total = (s.p1 + s.p2 + s.p3).toFixed(2);
+            document.getElementById('final-score').innerText = total;
+            
+            // Hide all submit buttons
+            document.querySelectorAll('.btn-submit-all').forEach(btn => btn.classList.add('hidden'));
+            document.getElementById('mobile-submit-bar').classList.add('translate-y-full', 'opacity-0');
+            
+            // Show result nav
+            document.getElementById('nav-results').classList.remove('hidden');
+            
+            let feedback = "Hãy tiếp tục ôn tập và nỗ lực hơn nhé! Đừng nản chí.";
+            if(total >= 9) feedback = "🎉 Xuất sắc! Kiến thức của bạn cực kỳ vững chắc.";
+            else if(total >= 8) feedback = "🌟 Rất tốt! Bạn đã sẵn sàng cho kỳ thi thật.";
+            else if(total >= 6.5) feedback = "👍 Khá tốt! Cần rà soát lại cẩn thận các câu sai để rút kinh nghiệm.";
+            else if(total >= 5) feedback = "💪 Đạt trung bình! Hãy tập trung ôn lại phần kiến thức còn yếu.";
+            
+            document.getElementById('performance-feedback').innerHTML = feedback;
+
+            renderResultsChart(s);
+            navTo('results');
+        }
+
+        function renderResultsChart(s) {
+            const ctx = document.getElementById('resultsChart').getContext('2d');
+            new Chart(ctx, {
+                type: 'bar',
+                data: {
+                    labels: ['Phần I (Trắc nghiệm)', 'Phần II (Đúng/Sai)', 'Phần III (Trả lời ngắn)'],
+                    datasets: [
+                        { label: 'Điểm đạt được', data: [s.p1, s.p2, s.p3], backgroundColor: '#10b981', borderRadius: 6, barPercentage: 0.6 },
+                        { label: 'Điểm tối đa', data: [3, 4, 3], backgroundColor: '#e2e8f0', borderRadius: 6, barPercentage: 0.6 }
+                    ]
+                },
+                options: { 
+                    responsive: true, 
+                    maintainAspectRatio: false,
+                    scales: { 
+                        y: { beginAtZero: true, max: 4, ticks: { stepSize: 1, color: '#64748b' }, grid: { borderDash: [4, 4], color: '#f1f5f9' } },
+                        x: { ticks: { color: '#64748b', font: { weight: '500' } }, grid: { display: false } }
+                    },
+                    plugins: { 
+                        legend: { position: 'bottom', labels: { usePointStyle: true, padding: 20, font: { family: "'Inter', sans-serif" } } },
+                        tooltip: { backgroundColor: '#1e293b', padding: 12, titleFont: { size: 14 }, bodyFont: { size: 13 }, cornerRadius: 8 }
+                    }
+                }
+            });
+        }
+
+        window.onload = () => {
+            renderPart1(); renderPart2(); renderPart3();
+            
+            // Initialize Chart.js defaults
+            Chart.defaults.font.family = "'Inter', sans-serif";
+            
+            const ctx = document.getElementById('overviewChart').getContext('2d');
+            new Chart(ctx, {
+                type: 'doughnut',
+                data: { 
+                    labels: ['Phần I: 3đ', 'Phần II: 4đ', 'Phần III: 3đ'], 
+                    datasets: [{ 
+                        data: [3, 4, 3], 
+                        backgroundColor: ['#3b82f6', '#6366f1', '#a855f7'],
+                        borderWidth: 0,
+                        hoverOffset: 10
+                    }] 
+                },
+                options: { 
+                    responsive: true, 
+                    maintainAspectRatio: false,
+                    cutout: '65%',
+                    plugins: { 
+                        legend: { position: 'bottom', labels: { usePointStyle: true, padding: 20 } },
+                        tooltip: { backgroundColor: '#1e293b', padding: 12, cornerRadius: 8 }
+                    }
+                }
+            });
+            
+            // Render Math expressions
+            if (window.renderMathInElement) {
+                renderMathInElement(document.body, { 
+                    delimiters: [
+                        {left: '$$', right: '$$', display: true},
+                        {left: '$', right: '$', display: false}
+                    ],
+                    throwOnError: false,
+                    errorColor: '#ef4444'
+                });
+            }
+
+            document.getElementById('mobile-menu-btn').onclick = () => {
+                document.getElementById('sidebar-nav').classList.toggle('hidden');
+            };
+        };
+    </script>
+</body>
+</html>
