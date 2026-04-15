@@ -1,0 +1,168 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Ôn thi Toán vào 10</title>
+
+<style>
+body { font-family: Arial; margin:0; background:#f0f2f5;}
+header { background:#1d4ed8; color:white; padding:15px; text-align:center;}
+.container { padding:15px; }
+.card { background:white; padding:15px; margin:10px 0; border-radius:10px; }
+button { padding:10px; margin-top:10px; cursor:pointer; }
+.timer { color:red; font-weight:bold; }
+</style>
+</head>
+
+<body>
+
+<header>
+<h1>📘 Ôn thi vào 10 - Toán</h1>
+<p id="timer">⏳ Thời gian: 00:00</p>
+</header>
+
+<div class="container">
+
+<div class="card">
+<input type="text" id="studentName" placeholder="Nhập tên học sinh">
+<button onclick="startQuiz()">Bắt đầu làm bài</button>
+</div>
+
+<div id="quiz"></div>
+
+<div class="card">
+<h3>📊 Kết quả đã lưu</h3>
+<ul id="history"></ul>
+</div>
+
+</div>
+
+<script>
+// ===== NGÂN HÀNG CÂU HỎI =====
+const questionBank = [
+{
+q: "Nghiệm của x² - 4 = 0 là?",
+a: ["2", "-2", "±2", "0"],
+correct: 2
+},
+{
+q: "Tổng nghiệm của x² - 3x + 2 = 0?",
+a: ["1", "2", "3", "4"],
+correct: 2
+},
+{
+q: "Δ của x² - 2x + 1?",
+a: ["0", "1", "2", "4"],
+correct: 0
+},
+{
+q: "Hệ số a trong ax² + bx + c?",
+a: ["b", "c", "x", "x²"],
+correct: 3
+},
+{
+q: "Nghiệm kép khi?",
+a: ["Δ>0", "Δ=0", "Δ<0", "a=0"],
+correct: 1
+}
+];
+
+// ===== RANDOM CÂU HỎI =====
+function shuffle(array) {
+return array.sort(() => Math.random() - 0.5);
+}
+
+// ===== BIẾN =====
+let selectedQuestions = [];
+let time = 300; // 5 phút
+let interval;
+
+// ===== BẮT ĐẦU =====
+function startQuiz() {
+let name = document.getElementById("studentName").value;
+if (!name) {
+alert("Nhập tên!");
+return;
+}
+
+selectedQuestions = shuffle([...questionBank]).slice(0, 3);
+renderQuiz();
+startTimer();
+}
+
+// ===== HIỂN THỊ =====
+function renderQuiz() {
+let html = "";
+selectedQuestions.forEach((q, i) => {
+html += `<div class="card">
+<p><b>Câu ${i+1}:</b> ${q.q}</p>`;
+q.a.forEach((ans, j) => {
+html += `<input type="radio" name="q${i}" value="${j}"> ${ans}<br>`;
+});
+html += `</div>`;
+});
+html += `<button onclick="submitQuiz()">Nộp bài</button>`;
+document.getElementById("quiz").innerHTML = html;
+}
+
+// ===== TIMER =====
+function startTimer() {
+clearInterval(interval);
+interval = setInterval(() => {
+time--;
+let min = Math.floor(time/60);
+let sec = time%60;
+document.getElementById("timer").innerText =
+"⏳ Thời gian: " + min + ":" + (sec<10?"0":"") + sec;
+
+if (time <= 0) {
+clearInterval(interval);
+submitQuiz();
+}
+},1000);
+}
+
+// ===== CHẤM ĐIỂM =====
+function submitQuiz() {
+clearInterval(interval);
+let score = 0;
+
+selectedQuestions.forEach((q, i) => {
+let ans = document.querySelector(`input[name="q${i}"]:checked`);
+if (ans && parseInt(ans.value) === q.correct) score++;
+});
+
+let name = document.getElementById("studentName").value;
+
+let result = {
+name: name,
+score: score,
+total: selectedQuestions.length,
+time: new Date().toLocaleString()
+};
+
+// LƯU
+let history = JSON.parse(localStorage.getItem("results") || "[]");
+history.push(result);
+localStorage.setItem("results", JSON.stringify(history));
+
+alert(`Bạn được ${score}/${selectedQuestions.length}`);
+loadHistory();
+}
+
+// ===== HIỂN THỊ KẾT QUẢ =====
+function loadHistory() {
+let history = JSON.parse(localStorage.getItem("results") || "[]");
+let html = "";
+history.forEach(r => {
+html += `<li>${r.name}: ${r.score}/${r.total} (${r.time})</li>`;
+});
+document.getElementById("history").innerHTML = html;
+}
+
+loadHistory();
+</script>
+
+</body>
+</html>
